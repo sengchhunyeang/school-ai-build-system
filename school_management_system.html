@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduAdmin - Modern School Management System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            800: '#1E293B',
+                            900: '#1E3A8A',
+                            950: '#0F172A',
+                        },
+                        emerald: {
+                            500: '#10B981',
+                            600: '#059669',
+                            100: '#D1FAE5',
+                        },
+                        surface: '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .tab-active { background-color: #10B981 !important; color: white !important; }
+        .modal-bg { background-color: rgba(15, 23, 42, 0.65); }
+    </style>
+</head>
+<body class="bg-surface text-slate-800 flex h-screen overflow-hidden">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="bg-navy-950 text-white w-64 flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-30">
+        <div>
+            <!-- Logo Header -->
+            <div class="h-16 flex items-center justify-between px-4 bg-navy-900 border-b border-slate-800">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-emerald-500/30">
+                        <i class="fa-solid font-bold text-white"><span class="font-sans">E</span></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-wide text-white">EduAdmin</h1>
+                        <p class="text-xs text-emerald-400 font-medium">Academy Manager</p>
+                    </div>
+                </div>
+                <button id="closeMobileSidebar" class="lg:hidden text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Role Selector Banner -->
+            <div class="px-4 py-3 bg-slate-900/60 border-b border-slate-800/80">
+                <label class="block text-xs font-semibold text-slate-400 mb-1 uppercase tracking-wider">Active Role View</label>
+                <select id="roleSwitcher" onchange="switchRole(this.value)" class="w-full bg-navy-950 text-emerald-400 text-xs font-semibold rounded-md px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                    <option value="admin">👨‍💼 Super Admin</option>
+                    <option value="teacher">👨‍🏫 Teacher</option>
+                    <option value="student">🎓 Student</option>
+                    <option value="parent">👨‍👩‍👧 Parent</option>
+                </select>
+            </div>
+
+            <!-- Main Navigation Links -->
+            <nav class="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-180px)] custom-scrollbar" id="navContainer">
+                <!-- Navigation items dynamically injected by JavaScript -->
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-slate-800 bg-navy-950">
+            <div class="flex items-center space-x-3">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" class="w-9 h-9 rounded-full object-cover border-2 border-emerald-500" alt="User">
+                <div class="overflow-hidden">
+                    <p class="text-xs font-semibold text-white truncate" id="currentUserName">Dr. Sarah Jenkins</p>
+                    <p class="text-[10px] text-slate-400 truncate" id="currentUserRole">Principal / Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        <!-- HEADER -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 z-20 shadow-sm">
+            <div class="flex items-center space-x-4">
+                <button id="toggleSidebar" class="text-slate-600 hover:text-navy-900 focus:outline-none">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <div class="relative hidden sm:block w-64 md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" placeholder="Search students, teachers, grades, fees..." class="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500 bg-surface">
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <!-- Global Quick Action Button -->
+                <button onclick="openModal('quickActionModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold px-3 py-2 rounded-lg flex items-center space-x-2 shadow-sm transition">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden sm:inline">Quick Action</span>
+                </button>
+
+                <!-- Academic Year Badge -->
+                <div class="hidden md:flex items-center px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium">
+                    <i class="fa-regular fa-calendar-check text-emerald-600 mr-2"></i> AY 2026-2027
+                </div>
+
+                <!-- Notifications Dropdown -->
+                <div class="relative">
+                    <button id="notifBtn" onclick="toggleDropdown('notifDropdown')" class="relative p-2 text-slate-600 hover:text-navy-900 rounded-full hover:bg-slate-100">
+                        <i class="fa-regular fa-bell text-lg"></i>
+                        <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
+                    </button>
+
+                    <!-- Notifications Menu -->
+                    <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                        <div class="p-3 bg-navy-950 text-white flex justify-between items-center">
+                            <h4 class="text-xs font-bold uppercase tracking-wide">System Alerts</h4>
+                            <span class="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">3 New</span>
+                        </div>
+                        <div class="divide-y divide-slate-100 max-h-64 overflow-y-auto text-xs">
+                            <a href="#" class="p-3 block hover:bg-slate-50 transition">
+                                <p class="font-semibold text-slate-800">New Admission Application</p>
+                                <p class="text-slate-500 text-[11px] mt-0.5">Michael Chang submitted form for Grade 10.</p>
+                                <p class="text-[10px] text-emerald-600 mt-1 font-medium">10 mins ago</p>
+                            </a>
+                            <a href="#" class="p-3 block hover:bg-slate-50 transition">
+                                <p class="font-semibold text-slate-800">Fee Payment Received</p>
+                                <p class="text-slate-500 text-[11px] mt-0.5">Invoice #INV-2026-089 paid by Sarah Connor ($1,250).</p>
+                                <p class="text-[10px] text-emerald-600 mt-1 font-medium">1 hour ago</p>
+                            </a>
+                            <a href="#" class="p-3 block hover:bg-slate-50 transition">
+                                <p class="font-semibold text-slate-800">Attendance Alert</p>
+                                <p class="text-slate-500 text-[11px] mt-0.5">Grade 9B attendance submitted. 3 Students absent.</p>
+                                <p class="text-[10px] text-emerald-600 mt-1 font-medium">3 hours ago</p>
+                            </a>
+                        </div>
+                        <div class="p-2 text-center border-t border-slate-100 bg-slate-50">
+                            <button onclick="switchView('communication')" class="text-xs text-navy-900 font-semibold hover:underline">View All Broadcasts</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Dropdown Trigger -->
+                <div class="flex items-center pl-2 border-l border-slate-200">
+                    <span id="activeRoleBadge" class="bg-navy-900 text-emerald-400 font-bold text-[10px] uppercase px-2 py-1 rounded">Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- VIEW CONTAINER -->
+        <main id="mainContent" class="flex-1 overflow-y-auto p-4 md:p-6 bg-surface custom-scrollbar">
+            <!-- Content views will be dynamically injected here -->
+        </main>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Quick Action Modal -->
+    <div id="quickActionModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                <h3 class="text-base font-bold text-navy-950 flex items-center"><i class="fa-solid fa-bolt text-emerald-500 mr-2"></i> Dynamic Action Menu</h3>
+                <button onclick="closeModal('quickActionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                <button onclick="closeModal('quickActionModal'); openModal('addStudentModal');" class="p-3 text-left bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 rounded-xl transition">
+                    <i class="fa-solid fa-user-plus text-emerald-600 text-xl mb-2"></i>
+                    <p class="text-xs font-bold text-navy-950">Add Student</p>
+                    <p class="text-[10px] text-slate-500">Register new student</p>
+                </button>
+                <button onclick="closeModal('quickActionModal'); openModal('recordGradeModal');" class="p-3 text-left bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 rounded-xl transition">
+                    <i class="fa-solid fa-pen-to-square text-emerald-600 text-xl mb-2"></i>
+                    <p class="text-xs font-bold text-navy-950">Record Marks</p>
+                    <p class="text-[10px] text-slate-500">Post exam grades</p>
+                </button>
+                <button onclick="closeModal('quickActionModal'); openModal('collectFeeModal');" class="p-3 text-left bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 rounded-xl transition">
+                    <i class="fa-solid fa-receipt text-emerald-600 text-xl mb-2"></i>
+                    <p class="text-xs font-bold text-navy-950">Collect Fees</p>
+                    <p class="text-[10px] text-slate-500">Issue fee receipt</p>
+                </button>
+                <button onclick="closeModal('quickActionModal'); openModal('sendNoticeModal');" class="p-3 text-left bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 rounded-xl transition">
+                    <i class="fa-solid fa-paper-plane text-emerald-600 text-xl mb-2"></i>
+                    <p class="text-xs font-bold text-navy-950">Send Notice</p>
+                    <p class="text-[10px] text-slate-500">Broadcast SMS/Telegram</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                <h3 class="text-base font-bold text-navy-950"><i class="fa-solid fa-user-plus text-emerald-500 mr-2"></i> Register New Student</h3>
+                <button onclick="closeModal('addStudentModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="addStudentForm" onsubmit="handleAddStudent(event)" class="mt-4 space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">First Name</label>
+                        <input type="text" required class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Last Name</label>
+                        <input type="text" required class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Assign Class</label>
+                        <select class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                            <option>Grade 9A</option>
+                            <option>Grade 9B</option>
+                            <option>Grade 10A</option>
+                            <option>Grade 11 Science</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Gender</label>
+                        <select class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Parent/Guardian Email</label>
+                    <input type="email" placeholder="parent@example.com" required class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="pt-3 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('addStudentModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">Save Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Record Grade Modal -->
+    <div id="recordGradeModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                <h3 class="text-base font-bold text-navy-950"><i class="fa-solid fa-graduation-cap text-emerald-500 mr-2"></i> Post Academic Marks</h3>
+                <button onclick="closeModal('recordGradeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleGenericSubmit(event, 'recordGradeModal', 'Academic grade updated successfully!')" class="mt-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Select Student</label>
+                    <select class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                        <option>Alexander Wright (G10-001)</option>
+                        <option>Sophia Martinez (G10-004)</option>
+                        <option>Liam Johnson (G9-012)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Subject</label>
+                        <select class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                            <option>Mathematics</option>
+                            <option>Physics</option>
+                            <option>English Lit</option>
+                            <option>Chemistry</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Marks Obtained (%)</label>
+                        <input type="number" max="100" min="0" value="88" required class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('recordGradeModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">Submit Grade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Collect Fee Modal -->
+    <div id="collectFeeModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                <h3 class="text-base font-bold text-navy-950"><i class="fa-solid fa-receipt text-emerald-500 mr-2"></i> Record Fee Payment</h3>
+                <button onclick="closeModal('collectFeeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleGenericSubmit(event, 'collectFeeModal', 'Payment receipt generated and logged!')" class="mt-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Student</label>
+                    <select class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                        <option>Ethan Davis - Tuition (Term 2)</option>
+                        <option>Emma Wilson - Science Lab Fee</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Amount ($)</label>
+                        <input type="number" value="1250" required class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label>
+                        <select class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                            <option>Credit Card</option>
+                            <option>Bank Transfer</option>
+                            <option>Cash</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('collectFeeModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">Process Receipt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Send Notice Modal -->
+    <div id="sendNoticeModal" class="hidden fixed inset-0 modal-bg z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100">
+                <h3 class="text-base font-bold text-navy-950"><i class="fa-solid fa-paper-plane text-emerald-500 mr-2"></i> Broadcast Notification</h3>
+                <button onclick="closeModal('sendNoticeModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleGenericSubmit(event, 'sendNoticeModal', 'Telegram & SMS Broadcast queued for dispatch!')" class="mt-4 space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Recipient Group</label>
+                    <select class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                        <option>All Parents & Guardians</option>
+                        <option>All Teaching Staff</option>
+                        <option>Grade 10 Parents Only</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Dispatch Channels</label>
+                    <div class="flex space-x-4 pt-1">
+                        <label class="inline-flex items-center text-xs text-slate-700">
+                            <input type="checkbox" checked class="rounded text-emerald-500 focus:ring-emerald-400 mr-1.5"> Telegram Bot
+                        </label>
+                        <label class="inline-flex items-center text-xs text-slate-700">
+                            <input type="checkbox" checked class="rounded text-emerald-500 focus:ring-emerald-400 mr-1.5"> SMS Gateway
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Message Body</label>
+                    <textarea rows="3" required class="w-full text-xs p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500" placeholder="Type notification details..."></textarea>
+                </div>
+                <div class="pt-3 flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal('sendNoticeModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200">Cancel</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-500 rounded-lg hover:bg-emerald-600">Send Dispatch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        // CORE APPLICATION DATA & STATE MANAGEMENT
+        let currentRole = 'admin';
+        let currentModule = 'portal';
+
+        // Dynamic Navigation Items Definition
+        const navModules = [
+            { id: 'portal', label: 'School Portal', icon: 'fa-globe', roles: ['admin', 'teacher', 'student', 'parent'] },
+            { id: 'admissions', label: 'Admissions & Desk', icon: 'fa-id-card', roles: ['admin', 'parent'] },
+            { id: 'students', label: 'Students Directory', icon: 'fa-user-graduate', roles: ['admin', 'teacher'] },
+            { id: 'teachers', label: 'Teachers & Staff', icon: 'fa-chalkboard-user', roles: ['admin'] },
+            { id: 'academic', label: 'Academic & Timetable', icon: 'fa-book-open', roles: ['admin', 'teacher', 'student', 'parent'] },
+            { id: 'finance', label: 'Finance & Invoices', icon: 'fa-wallet', roles: ['admin', 'parent'] },
+            { id: 'communication', label: 'Communication Hub', icon: 'fa-comments', roles: ['admin', 'teacher', 'student', 'parent'] },
+            { id: 'reports', label: 'Reports & Analytics', icon: 'fa-chart-pie', roles: ['admin', 'teacher'] },
+            { id: 'settings', label: 'System Settings', icon: 'fa-gear', roles: ['admin'] }
+        ];
+
+        // Mock Students Data
+        let studentsData = [
+            { id: 'STD-1001', name: 'Alexander Wright', class: 'Grade 10A', attendance: '96%', gpa: '3.8', status: 'Active', feeStatus: 'Paid' },
+            { id: 'STD-1002', name: 'Sophia Martinez', class: 'Grade 10A', attendance: '92%', gpa: '3.9', status: 'Active', feeStatus: 'Paid' },
+            { id: 'STD-1003', name: 'Liam Johnson', class: 'Grade 9B', attendance: '88%', gpa: '3.4', status: 'Active', feeStatus: 'Pending' },
+            { id: 'STD-1004', name: 'Emma Wilson', class: 'Grade 11 Science', attendance: '99%', gpa: '4.0', status: 'Active', feeStatus: 'Paid' },
+            { id: 'STD-1005', name: 'Ethan Davis', class: 'Grade 9A', attendance: '85%', gpa: '3.1', status: 'Warning', feeStatus: 'Overdue' }
+        ];
+
+        // Application Initialization
+        window.onload = function() {
+            renderNavigation();
+            switchView('portal');
+            setupMobileEvents();
+        };
+
+        function setupMobileEvents() {
+            const sidebar = document.getElementById('sidebar');
+            document.getElementById('toggleSidebar').addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                if(sidebar.classList.contains('-translate-x-full')) {
+                    sidebar.classList.remove('fixed', 'inset-y-0', 'left-0');
+                } else {
+                    sidebar.classList.add('fixed', 'inset-y-0', 'left-0');
+                }
+            });
+            document.getElementById('closeMobileSidebar').addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+            });
+        }
+
+        function switchRole(role) {
+            currentRole = role;
+            const badge = document.getElementById('activeRoleBadge');
+            const userName = document.getElementById('currentUserName');
+            const userRole = document.getElementById('currentUserRole');
+
+            badge.innerText = role.toUpperCase();
+
+            if (role === 'admin') {
+                userName.innerText = 'Dr. Sarah Jenkins';
+                userRole.innerText = 'Principal / Admin';
+            } else if (role === 'teacher') {
+                userName.innerText = 'Prof. Robert Lang';
+                userRole.innerText = 'Senior Math Faculty';
+            } else if (role === 'student') {
+                userName.innerText = 'Alexander Wright';
+                userRole.innerText = 'Grade 10 Student';
+            } else if (role === 'parent') {
+                userName.innerText = 'Marcus Wright';
+                userRole.innerText = 'Parent Account';
+            }
+
+            renderNavigation();
+            showToast(`Switched workspace view to: ${role.toUpperCase()}`, 'info');
+            
+            // Re-render current module if allowed, else fallback to portal
+            const allowed = navModules.find(m => m.id === currentModule)?.roles.includes(role);
+            switchView(allowed ? currentModule : 'portal');
+        }
+
+        function renderNavigation() {
+            const navContainer = document.getElementById('navContainer');
+            navContainer.innerHTML = '';
+
+            navModules.forEach(mod => {
+                if (mod.roles.includes(currentRole)) {
+                    const btn = document.createElement('button');
+                    btn.id = `nav-${mod.id}`;
+                    btn.onclick = () => switchView(mod.id);
+                    btn.className = `w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition duration-150 ${currentModule === mod.id ? 'bg-emerald-500 text-white font-semibold shadow-md shadow-emerald-500/20' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`;
+                    btn.innerHTML = `<i class="fa-solid ${mod.icon} text-sm w-5 text-center"></i> <span>${mod.label}</span>`;
+                    navContainer.appendChild(btn);
+                }
+            });
+        }
+
+        function switchView(moduleId) {
+            currentModule = moduleId;
+            renderNavigation();
+
+            const main = document.getElementById('mainContent');
+            main.innerHTML = '';
+
+            // Render module view
+            switch (moduleId) {
+                case 'portal': renderPortalView(main); break;
+                case 'admissions': renderAdmissionsView(main); break;
+                case 'students': renderStudentsView(main); break;
+                case 'teachers': renderTeachersView(main); break;
+                case 'academic': renderAcademicView(main); break;
+                case 'finance': renderFinanceView(main); break;
+                case 'communication': renderCommunicationView(main); break;
+                case 'reports': renderReportsView(main); break;
+                case 'settings': renderSettingsView(main); break;
+                default: renderPortalView(main); break;
+            }
+        }
+
+        
+        // 1. PUBLIC PORTAL MODULE
+        function renderPortalView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <!-- Hero Banner -->
+                    <div class="relative bg-navy-900 rounded-3xl p-6 md:p-10 text-white overflow-hidden shadow-xl">
+                        <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+                            <i class="fa-solid fa-graduation-cap text-[280px]"></i>
+                        </div>
+                        <div class="relative z-10 max-w-2xl">
+                            <span class="inline-block bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold px-3 py-1 rounded-full mb-3">Welcome to Horizon Academy Portal</span>
+                            <h2 class="text-2xl md:text-4xl font-extrabold tracking-tight mb-3">Empowering Tomorrow's Leaders Today</h2>
+                            <p class="text-slate-300 text-xs md:text-sm leading-relaxed mb-6">Experience a unified educational ecosystem with automated tracking, live academic progress updates, and transparent communication.</p>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="switchView('admissions')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/30">Apply For Admission</button>
+                                <button onclick="switchView('academic')" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl border border-slate-700 transition">View Timetables</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics Cards -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium uppercase">Enrolled Students</p>
+                                <h3 class="text-2xl font-bold text-navy-950 mt-1">1,248</h3>
+                                <p class="text-[11px] text-emerald-600 font-semibold mt-1"><i class="fa-solid fa-arrow-trend-up"></i> +4.2% this year</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-navy-900 text-emerald-400 flex items-center justify-center text-xl shadow-md">
+                                <i class="fa-solid fa-user-graduate"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium uppercase">Certified Teachers</p>
+                                <h3 class="text-2xl font-bold text-navy-950 mt-1">84</h3>
+                                <p class="text-[11px] text-emerald-600 font-semibold mt-1"><i class="fa-solid fa-check"></i> 100% Active</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-500/20">
+                                <i class="fa-solid fa-chalkboard-user"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium uppercase">Avg Attendance</p>
+                                <h3 class="text-2xl font-bold text-navy-950 mt-1">95.4%</h3>
+                                <p class="text-[11px] text-emerald-600 font-semibold mt-1"><i class="fa-solid fa-circle-check"></i> High engagement</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-navy-900 text-emerald-400 flex items-center justify-center text-xl shadow-md">
+                                <i class="fa-solid fa-clipboard-user"></i>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500 font-medium uppercase">Fee Collection Rate</p>
+                                <h3 class="text-2xl font-bold text-navy-950 mt-1">91.8%</h3>
+                                <p class="text-[11px] text-emerald-600 font-semibold mt-1"><i class="fa-solid fa-arrow-up"></i> On target</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-500/20">
+                                <i class="fa-solid fa-sack-dollar"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- News & Announcements + Events -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- News Feed -->
+                        <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-sm font-bold text-navy-950 uppercase tracking-wide flex items-center"><i class="fa-solid fa-newspaper text-emerald-500 mr-2"></i> School News & Announcements</h3>
+                                <button onclick="switchView('communication')" class="text-xs text-emerald-600 font-semibold hover:underline">View All</button>
+                            </div>
+                            <div class="space-y-4">
+                                <div class="p-4 rounded-xl border border-slate-100 bg-surface hover:border-emerald-200 transition">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="bg-navy-900 text-emerald-400 text-[10px] font-bold px-2.5 py-0.5 rounded">ACADEMIC</span>
+                                        <span class="text-[11px] text-slate-400">Sept 18, 2026</span>
+                                    </div>
+                                    <h4 class="text-xs font-bold text-navy-950 mb-1">Annual STEM Fair & Technology Expo Registration Opened</h4>
+                                    <p class="text-xs text-slate-600 line-clamp-2">Students from grades 8 through 12 are invited to register their science project abstracts before October 10th.</p>
+                                </div>
+                                <div class="p-4 rounded-xl border border-slate-100 bg-surface hover:border-emerald-200 transition">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2.5 py-0.5 rounded">EXAMINATIONS</span>
+                                        <span class="text-[11px] text-slate-400">Sept 15, 2026</span>
+                                    </div>
+                                    <h4 class="text-xs font-bold text-navy-950 mb-1">Mid-Term Assessment Timetables Released</h4>
+                                    <p class="text-xs text-slate-600 line-clamp-2">The official exam schedule for the upcoming Term 1 assessments is now available in the Academic module.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Events -->
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-sm font-bold text-navy-950 uppercase tracking-wide mb-4 flex items-center"><i class="fa-solid fa-calendar-days text-emerald-500 mr-2"></i> Upcoming Events</h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center space-x-3 p-3 rounded-xl bg-surface border border-slate-100">
+                                    <div class="w-12 h-12 bg-navy-950 text-emerald-400 rounded-xl flex flex-col items-center justify-center font-bold text-xs flex-shrink-0">
+                                        <span>24</span>
+                                        <span class="text-[9px] uppercase text-slate-300">SEP</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-navy-950">Parent-Teacher Conference</h4>
+                                        <p class="text-[11px] text-slate-500">Main Auditorium • 09:00 AM</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3 p-3 rounded-xl bg-surface border border-slate-100">
+                                    <div class="w-12 h-12 bg-emerald-500 text-white rounded-xl flex flex-col items-center justify-center font-bold text-xs flex-shrink-0">
+                                        <span>02</span>
+                                        <span class="text-[9px] uppercase text-emerald-100">OCT</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-navy-950">Inter-School Sports Gala</h4>
+                                        <p class="text-[11px] text-slate-500">Sports Complex • 08:30 AM</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. ADMISSIONS MODULE
+        function renderAdmissionsView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-navy-950">Admissions Desk & Application Tracker</h2>
+                            <p class="text-xs text-slate-500">Manage incoming student enrollments and application pipelines.</p>
+                        </div>
+                        <button onclick="openModal('addStudentModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition">
+                            <i class="fa-solid fa-plus mr-1"></i> New Direct Admission
+                        </button>
+                    </div>
+
+                    <!-- Pipeline Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-navy-950 uppercase tracking-wider">Recent Online Applications</h3>
+                            <span class="text-xs text-slate-500">Showing 3 active submissions</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3.5">App ID</th>
+                                        <th class="p-3.5">Applicant Name</th>
+                                        <th class="p-3.5">Target Grade</th>
+                                        <th class="p-3.5">Submission Date</th>
+                                        <th class="p-3.5">Status</th>
+                                        <th class="p-3.5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3.5 font-bold text-navy-900">APP-2026-091</td>
+                                        <td class="p-3.5">Michael Chang</td>
+                                        <td class="p-3.5">Grade 10</td>
+                                        <td class="p-3.5">Sept 18, 2026</td>
+                                        <td class="p-3.5"><span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full">Under Review</span></td>
+                                        <td class="p-3.5 text-right space-x-2">
+                                            <button onclick="showToast('Application APP-2026-091 Approved!', 'success')" class="text-emerald-600 hover:text-emerald-800 font-bold">Approve</button>
+                                            <button onclick="showToast('Application marked pending verification', 'warning')" class="text-slate-400 hover:text-slate-600">Review</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3.5 font-bold text-navy-900">APP-2026-088</td>
+                                        <td class="p-3.5">Isabella Rossi</td>
+                                        <td class="p-3.5">Grade 9</td>
+                                        <td class="p-3.5">Sept 16, 2026</td>
+                                        <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">Documents Verified</span></td>
+                                        <td class="p-3.5 text-right space-x-2">
+                                            <button onclick="showToast('Application APP-2026-088 Approved!', 'success')" class="text-emerald-600 hover:text-emerald-800 font-bold">Approve</button>
+                                            <button class="text-slate-400 hover:text-slate-600">Review</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3.5 font-bold text-navy-900">APP-2026-074</td>
+                                        <td class="p-3.5">David Miller</td>
+                                        <td class="p-3.5">Grade 11 Science</td>
+                                        <td class="p-3.5">Sept 12, 2026</td>
+                                        <td class="p-3.5"><span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-1 rounded-full">Interview Scheduled</span></td>
+                                        <td class="p-3.5 text-right space-x-2">
+                                            <button onclick="showToast('Application APP-2026-074 Approved!', 'success')" class="text-emerald-600 hover:text-emerald-800 font-bold">Approve</button>
+                                            <button class="text-slate-400 hover:text-slate-600">Review</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 3. STUDENTS MODULE
+        function renderStudentsView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-navy-950">Student Profiles & Directory</h2>
+                            <p class="text-xs text-slate-500">Filter, edit, and track academic records across all grades.</p>
+                        </div>
+                        <button onclick="openModal('addStudentModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition">
+                            <i class="fa-solid fa-plus mr-1"></i> Add Student Profile
+                        </button>
+                    </div>
+
+                    <!-- Student List Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-4">
+                            <input id="studentSearchInput" onkeyup="filterStudents()" type="text" placeholder="Filter by name or class..." class="text-xs p-2.5 border border-slate-200 rounded-lg w-full max-w-xs focus:outline-none focus:border-emerald-500">
+                            <span class="text-xs text-slate-500 font-medium">Total: ${studentsData.length} Students</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3.5">ID Number</th>
+                                        <th class="p-3.5">Student Name</th>
+                                        <th class="p-3.5">Class / Section</th>
+                                        <th class="p-3.5">Attendance</th>
+                                        <th class="p-3.5">Academic GPA</th>
+                                        <th class="p-3.5">Fee Status</th>
+                                        <th class="p-3.5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentsTableBody" class="divide-y divide-slate-100 font-medium text-slate-700">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            renderStudentTableRows();
+        }
+
+        function renderStudentTableRows() {
+            const body = document.getElementById('studentsTableBody');
+            if(!body) return;
+            body.innerHTML = '';
+            studentsData.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50";
+                tr.innerHTML = `
+                    <td class="p-3.5 font-bold text-navy-900">${student.id}</td>
+                    <td class="p-3.5 flex items-center space-x-2">
+                        <div class="w-7 h-7 rounded-full bg-navy-900 text-emerald-400 font-bold flex items-center justify-center text-[10px] uppercase">
+                            ${student.name.charAt(0)}
+                        </div>
+                        <span class="font-semibold text-slate-800">${student.name}</span>
+                    </td>
+                    <td class="p-3.5">${student.class}</td>
+                    <td class="p-3.5"><span class="text-emerald-600 font-bold">${student.attendance}</span></td>
+                    <td class="p-3.5 font-bold">${student.gpa}</td>
+                    <td class="p-3.5">
+                        <span class="${student.feeStatus === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'} text-[10px] font-bold px-2.5 py-1 rounded-full">
+                            ${student.feeStatus}
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-right space-x-2">
+                        <button onclick="showToast('Viewing full file for ${student.name}', 'info')" class="text-navy-900 hover:text-emerald-600 font-bold">View Profile</button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function filterStudents() {
+            const query = document.getElementById('studentSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#studentsTableBody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        // 4. TEACHERS & STAFF MODULE
+        function renderTeachersView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-navy-950">Faculty & Staff Management</h2>
+                            <p class="text-xs text-slate-500">Teacher profile allocations and subject duties.</p>
+                        </div>
+                        <button onclick="showToast('Staff Registration Form Triggered', 'info')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition">
+                            <i class="fa-solid fa-plus mr-1"></i> Add Faculty Member
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200" class="w-20 h-20 rounded-full mx-auto object-cover border-4 border-emerald-100 mb-3" alt="Teacher">
+                            <h3 class="text-sm font-bold text-navy-950">Prof. Robert Lang</h3>
+                            <p class="text-xs text-emerald-600 font-semibold mb-2">Head of Mathematics</p>
+                            <div class="text-[11px] text-slate-500 space-y-1">
+                                <p><i class="fa-solid fa-book text-slate-400 mr-1"></i> Grades 10A, 11 Science</p>
+                                <p><i class="fa-solid fa-envelope text-slate-400 mr-1"></i> r.lang@horizon.edu</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+                            <img src="https://images.unsplash.com/photo-1580894732413-80e32f41d3d6?auto=format&fit=crop&q=80&w=200" class="w-20 h-20 rounded-full mx-auto object-cover border-4 border-emerald-100 mb-3" alt="Teacher">
+                            <h3 class="text-sm font-bold text-navy-950">Dr. Eleanor Vance</h3>
+                            <p class="text-xs text-emerald-600 font-semibold mb-2">Physics & Science Lead</p>
+                            <div class="text-[11px] text-slate-500 space-y-1">
+                                <p><i class="fa-solid fa-book text-slate-400 mr-1"></i> Grades 9B, 11 Science</p>
+                                <p><i class="fa-solid fa-envelope text-slate-400 mr-1"></i> e.vance@horizon.edu</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200" class="w-20 h-20 rounded-full mx-auto object-cover border-4 border-emerald-100 mb-3" alt="Teacher">
+                            <h3 class="text-sm font-bold text-navy-950">Marcus Brody</h3>
+                            <p class="text-xs text-emerald-600 font-semibold mb-2">History & Literature</p>
+                            <div class="text-[11px] text-slate-500 space-y-1">
+                                <p><i class="fa-solid fa-book text-slate-400 mr-1"></i> Grades 9A, 10B</p>
+                                <p><i class="fa-solid fa-envelope text-slate-400 mr-1"></i> m.brody@horizon.edu</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 5. ACADEMIC & TIMETABLE MODULE
+        function renderAcademicView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-navy-950">Academic Schedule & Timetable</h2>
+                            <p class="text-xs text-slate-500">Interactive class period visualizer for academic year 2026-2027.</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="openModal('recordGradeModal')" class="bg-navy-900 hover:bg-navy-950 text-emerald-400 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-800 transition">
+                                <i class="fa-solid fa-pen-to-square mr-1"></i> Post Exam Grades
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timetable Visualizer Grid -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xs font-bold text-navy-950 uppercase tracking-wider">Class Timetable - Grade 10A</h3>
+                            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">Room 204 • Block B</span>
+                        </div>
+                        <table class="w-full text-center text-xs border-collapse min-w-[600px]">
+                            <thead>
+                                <tr class="bg-navy-950 text-white font-semibold text-[11px]">
+                                    <th class="p-3 border border-slate-800">Time / Day</th>
+                                    <th class="p-3 border border-slate-800">Monday</th>
+                                    <th class="p-3 border border-slate-800">Tuesday</th>
+                                    <th class="p-3 border border-slate-800">Wednesday</th>
+                                    <th class="p-3 border border-slate-800">Thursday</th>
+                                    <th class="p-3 border border-slate-800">Friday</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 text-slate-700">
+                                <tr>
+                                    <td class="p-3 font-bold bg-slate-50 border">08:00 - 09:30 AM</td>
+                                    <td class="p-3 bg-emerald-50 text-emerald-900 font-bold border">Mathematics<br><span class="text-[10px] font-normal text-slate-500">Prof. Lang</span></td>
+                                    <td class="p-3 border">Physics Lab</td>
+                                    <td class="p-3 bg-emerald-50 text-emerald-900 font-bold border">Mathematics<br><span class="text-[10px] font-normal text-slate-500">Prof. Lang</span></td>
+                                    <td class="p-3 border">English Lit</td>
+                                    <td class="p-3 bg-emerald-50 text-emerald-900 font-bold border">Chemistry</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold bg-slate-50 border">09:30 - 11:00 AM</td>
+                                    <td class="p-3 border">English Lit</td>
+                                    <td class="p-3 bg-emerald-50 text-emerald-900 font-bold border">Mathematics</td>
+                                    <td class="p-3 border">World History</td>
+                                    <td class="p-3 border">Physics</td>
+                                    <td class="p-3 border">Physical Ed.</td>
+                                </tr>
+                                <tr class="bg-amber-50 text-amber-900 font-bold">
+                                    <td class="p-2 border" colspan="6">11:00 AM - 11:45 AM • RECESS & LUNCH BREAK</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-bold bg-slate-50 border">11:45 - 01:15 PM</td>
+                                    <td class="p-3 border">Computer Science</td>
+                                    <td class="p-3 border">Biology</td>
+                                    <td class="p-3 border">Computer Science</td>
+                                    <td class="p-3 bg-emerald-50 text-emerald-900 font-bold border">Mathematics</td>
+                                    <td class="p-3 border">Library / Study</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 6. FINANCE MODULE
+        function renderFinanceView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-navy-950">School Finance & Invoicing</h2>
+                            <p class="text-xs text-slate-500">Monitor fee collections, overdue invoices, and ledger summary.</p>
+                        </div>
+                        <button onclick="openModal('collectFeeModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition">
+                            <i class="fa-solid fa-receipt mr-1"></i> Collect Fee Payment
+                        </button>
+                    </div>
+
+                    <!-- Financial Summary Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Total Revenue Collected</p>
+                            <h3 class="text-2xl font-bold text-emerald-600 mt-1">$482,500</h3>
+                            <p class="text-[11px] text-slate-400 mt-1">Academic Year 2026-2027</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Pending Invoices</p>
+                            <h3 class="text-2xl font-bold text-amber-600 mt-1">$28,400</h3>
+                            <p class="text-[11px] text-slate-400 mt-1">18 Outstanding Accounts</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <p class="text-xs text-slate-500 font-medium uppercase">Operational Expenses</p>
+                            <h3 class="text-2xl font-bold text-navy-950 mt-1">$142,100</h3>
+                            <p class="text-[11px] text-slate-400 mt-1">Payroll & Utilities</p>
+                        </div>
+                    </div>
+
+                    <!-- Invoices Table -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-navy-950 uppercase tracking-wider">Fee Invoices Ledger</h3>
+                            <span class="text-xs text-emerald-600 font-bold">Showing Recent Invoices</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 uppercase font-semibold text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3.5">Invoice Ref</th>
+                                        <th class="p-3.5">Student</th>
+                                        <th class="p-3.5">Description</th>
+                                        <th class="p-3.5">Amount ($)</th>
+                                        <th class="p-3.5">Status</th>
+                                        <th class="p-3.5 text-right">Receipt</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3.5 font-bold text-navy-900">INV-2026-089</td>
+                                        <td class="p-3.5">Alexander Wright</td>
+                                        <td class="p-3.5">Term 2 Tuition Fee</td>
+                                        <td class="p-3.5 font-bold">$1,250</td>
+                                        <td class="p-3.5"><span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Paid</span></td>
+                                        <td class="p-3.5 text-right"><button onclick="showToast('Downloading Invoice PDF...', 'info')" class="text-navy-900 hover:text-emerald-600 font-bold"><i class="fa-solid fa-download"></i></button></td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3.5 font-bold text-navy-900">INV-2026-090</td>
+                                        <td class="p-3.5">Ethan Davis</td>
+                                        <td class="p-3.5">Tuition & Lab Fee</td>
+                                        <td class="p-3.5 font-bold">$1,400</td>
+                                        <td class="p-3.5"><span class="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Overdue</span></td>
+                                        <td class="p-3.5 text-right"><button onclick="openModal('collectFeeModal')" class="text-emerald-600 font-bold hover:underline">Collect</button></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 7. COMMUNICATION MODULE
+        function renderCommunicationView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-navy-950">Communication Hub & Dispatch</h2>
+                            <p class="text-xs text-slate-500">Send announcements to Telegram bot & SMS mobile gateways.</p>
+                        </div>
+                        <button onclick="openModal('sendNoticeModal')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition">
+                            <i class="fa-solid fa-paper-plane mr-1"></i> New Telegram / SMS Dispatch
+                        </button>
+                    </div>
+
+                    <!-- Messaging Panel Simulation -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                            <h3 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-2">Notification Channels</h3>
+                            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-brands fa-telegram text-emerald-600 text-xl"></i>
+                                    <div>
+                                        <p class="text-xs font-bold text-navy-950">Telegram Bot Channel</p>
+                                        <p class="text-[10px] text-emerald-700">@HorizonSchoolBot • Connected</p>
+                                    </div>
+                                </div>
+                                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                            </div>
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <i class="fa-solid fa-comment-sms text-navy-900 text-xl"></i>
+                                    <div>
+                                        <p class="text-xs font-bold text-navy-950">Twilio SMS Gateway</p>
+                                        <p class="text-[10px] text-slate-500">Active Balance: $140.50</p>
+                                    </div>
+                                </div>
+                                <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-3">Broadcast Log Stream</h3>
+                            <div class="space-y-3">
+                                <div class="p-3.5 bg-surface border border-slate-200 rounded-xl">
+                                    <div class="flex items-center justify-between text-[11px] mb-1">
+                                        <span class="font-bold text-navy-950"><i class="fa-brands fa-telegram text-emerald-600 mr-1"></i> Sent to Grade 10 Parents</span>
+                                        <span class="text-slate-400">Today, 02:15 PM</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600">Reminder: Tomorrow's parent-teacher meeting schedule is available on the portal.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 8. REPORTS MODULE (With Chart.js)
+        function renderReportsView(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div>
+                            <h2 class="text-lg font-bold text-navy-950">Analytics & Institutional Reports</h2>
+                            <p class="text-xs text-slate-500">Real-time charts on academic averages and attendance distribution.</p>
+                        </div>
+                        <button onclick="showToast('Exporting Analytics Executive PDF Summary...', 'success')" class="bg-navy-900 hover:bg-navy-950 text-emerald-400 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-800 transition">
+                            <i class="fa-solid fa-file-pdf mr-1"></i> Export Executive PDF
+                        </button>
+                    </div>
+
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-4">Subject Average Marks (%)</h3>
+                            <div class="h-64">
+                                <canvas id="academicChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                            <h3 class="text-xs font-bold text-navy-950 uppercase tracking-wider mb-4">Monthly Attendance Trends (%)</h3>
+                            <div class="h-64">
+                                <canvas id="attendanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Render Chart.js Analytics after insertion
+            setTimeout(() => {
+                const ctx1 = document.getElementById('academicChart');
+                if (ctx1) {
+                    new Chart(ctx1, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Math', 'Physics', 'Chemistry', 'English', 'History', 'Biology'],
+                            datasets: [{
+                                label: 'Average Score (%)',
+                                data: [88, 76, 82, 91, 85, 79],
+                                backgroundColor: '#10B981',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, max: 100 } }
+                        }
+                    });
+                }
+
+                const ctx2 = document.getElementById('attendanceChart');
+                if (ctx2) {
+                    new Chart(ctx2, {
+                        type: 'line',
+                        data: {
+                            labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+                            datasets: [{
+                                label: 'Attendance Rate %',
+                                data: [94, 95, 92, 96, 95.4, 97],
+                                borderColor: '#1E3A8A',
+                                backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                                fill: true,
+                                tension: 0.3,
+                                borderWidth: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { min: 80, max: 100 } }
+                        }
+                    });
+                }
+            }, 100);
+        }
+
+        // 9. SYSTEM SETTINGS MODULE
+        function renderSettingsView(container) {
+            container.innerHTML = `
+                <div class="space-y-6 max-w-4xl">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <h2 class="text-lg font-bold text-navy-950 mb-1">School System Configuration</h2>
+                        <p class="text-xs text-slate-500 mb-6">Manage global academic terms and branding defaults.</p>
+                        
+                        <form onsubmit="handleGenericSubmit(event, null, 'Settings saved successfully!')" class="space-y-4 text-xs">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Institution Name</label>
+                                    <input type="text" value="Horizon Academy International" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-slate-700 mb-1">Active Academic Year</label>
+                                    <select class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                                        <option>2026 - 2027 (Current Term 1)</option>
+                                        <option>2027 - 2028 (Upcoming)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Telegram Bot API Key</label>
+                                <input type="password" value="****************************************" class="w-full p-2.5 border border-slate-200 rounded-lg focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm transition">
+                                Save System Configuration
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        // UI HELPERS & MODAL UTILITIES
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) modal.classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) modal.classList.add('hidden');
+        }
+
+        function toggleDropdown(id) {
+            const el = document.getElementById(id);
+            if(el) el.classList.toggle('hidden');
+        }
+
+        function handleAddStudent(e) {
+            e.preventDefault();
+            const newStudent = {
+                id: `STD-${1000 + studentsData.length + 1}`,
+                name: e.target[0].value + ' ' + e.target[1].value,
+                class: e.target[2].value,
+                attendance: '100%',
+                gpa: '3.5',
+                status: 'Active',
+                feeStatus: 'Paid'
+            };
+            studentsData.unshift(newStudent);
+            closeModal('addStudentModal');
+            showToast(`Student profile for ${newStudent.name} registered!`, 'success');
+            if (currentModule === 'students') switchView('students');
+        }
+
+        function handleGenericSubmit(e, modalId, message) {
+            e.preventDefault();
+            if (modalId) closeModal(modalId);
+            showToast(message, 'success');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if(!container) return;
+
+            const toast = document.createElement('div');
+            let iconClass = 'fa-circle-info text-blue-500';
+            if (type === 'success') iconClass = 'fa-circle-check text-emerald-500';
+            if (type === 'warning') iconClass = 'fa-triangle-exclamation text-amber-500';
+
+            toast.className = 'pointer-events-auto flex items-center space-x-3 bg-navy-950 text-white text-xs px-4 py-3 rounded-xl shadow-2xl border border-slate-800 transition transform translate-y-2 opacity-0';
+            toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i> <span class="font-medium">${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
